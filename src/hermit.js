@@ -6,6 +6,7 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { randomBytes } from 'crypto';
+import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { generateConfig } from './generate-config.js';
 import { ensureLMStudio, ensureDocker } from './services.js';
 
@@ -35,9 +36,20 @@ async function cleanup(rootDir) {
   const dockerCompose = join(rootDir, 'docker-compose.yml');
   try {
     await execAsync(`docker compose -f "${dockerCompose}" down`);
-    console.log('✓ Stopped Hermit and unset environment variables');
+    console.log('✓ Stopped Hermit');
   } catch (error) {
     console.error('Error stopping services:', error.message);
+  }
+
+  // Remove env file
+  const cacheDir = join(rootDir, '.cache');
+  const envFile = join(cacheDir, '.hermit-env');
+  if (existsSync(envFile)) {
+    unlinkSync(envFile);
+    console.log('✓ Removed environment file');
+    console.log('');
+    console.log('To clear environment variables, run: hermit_clear');
+    console.log('(Or restart your shell)');
   }
 
   process.exit(0);
@@ -88,6 +100,32 @@ export async function run(options = {}) {
   process.env.ANTHROPIC_SMALL_FAST_MODEL = 'local';
   process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
 
+  // Write environment variables to file for sourcing
+  const envFile = join(cacheDir, '.hermit-env');
+  const envContent = `# Hermit environment variables
+# Usage:
+#   source ${envFile}     # Activate
+#   hermit_clear          # Clear variables
+
+export ANTHROPIC_AUTH_TOKEN="${authToken}"
+export ANTHROPIC_BASE_URL="http://localhost:4000"
+export ANTHROPIC_MODEL="local"
+export ANTHROPIC_SMALL_FAST_MODEL="local"
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+# Function to unset Hermit environment variables
+hermit_clear() {
+  unset ANTHROPIC_AUTH_TOKEN
+  unset ANTHROPIC_BASE_URL
+  unset ANTHROPIC_MODEL
+  unset ANTHROPIC_SMALL_FAST_MODEL
+  unset CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+  unset -f hermit_clear
+  echo "✓ Hermit environment variables cleared"
+}
+`;
+  writeFileSync(envFile, envContent);
+
   console.log('✓ Hermit is running and Claude Code is configured');
   console.log('');
   console.log('Available models:');
@@ -95,8 +133,14 @@ export async function run(options = {}) {
     console.log(`  - ${model.name} (${model.provider})`);
   });
   console.log('');
-  console.log('Usage with Claude Code:');
+  console.log('⚠️  Run this in your shell to enable Claude Code:');
+  console.log('');
+  console.log(`  source ${envFile}`);
+  console.log('');
+  console.log('Then run Claude Code:');
   console.log(`  claude --model ${config.models[0]?.name || 'local'}`);
+  console.log('');
+  console.log('To clear variables later, run: hermit_clear');
   console.log('');
 
   // Keep script running

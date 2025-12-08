@@ -73,10 +73,10 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
 
 ### Start Hermit
 
+**Terminal 1 - Start Hermit:**
 ```bash
 hermit
-# or if not linked
-npm start
+# or if not linked: npm start
 ```
 
 This will:
@@ -84,19 +84,37 @@ This will:
 - Start Docker Desktop (if not running)
 - Start LM Studio (if not running)
 - Launch LiteLLM proxy on `localhost:4000`
-- Configure environment variables for Claude Code
+- Create `.hermit-env` file with environment variables
 - Show live logs
+
+**Terminal 2 - Enable Claude Code:**
+```bash
+# Source the environment file (only needed once per shell session)
+source .cache/.hermit-env
+
+# Now use Claude Code with any configured model
+claude --model local
+claude --model kimi
+
+# When done, clear Hermit environment
+hermit_clear
+```
 
 **Silent mode** (no logs):
 ```bash
 hermit --silent
-# or
-npm run start:silent
 ```
 
 ### Stop Hermit
 
-Press `Ctrl+C` to stop services and cleanup environment variables.
+Press `Ctrl+C` in the Hermit terminal to stop all services.
+
+To clear the environment variables in your shell, run:
+```bash
+hermit_clear
+```
+
+Or simply restart your shell.
 
 ## How It Works
 
