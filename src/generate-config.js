@@ -43,14 +43,30 @@ export function generateConfig(models, cacheDir) {
         litellmParams.api_base = template.api_base;
       }
 
-      // Add optional parameters for local provider
+      // Add template-level params if they exist
+      if (template.drop_params) {
+        litellmParams.drop_params = template.drop_params;
+      }
+
+      // Add provider-specific parameters
       if (provider === 'local') {
+        // Optional parameters for local provider
         if (model.max_tokens) litellmParams.max_tokens = model.max_tokens;
         if (model.repetition_penalty)
           litellmParams.repetition_penalty = model.repetition_penalty;
         if (model.temperature) litellmParams.temperature = model.temperature;
         if (model.top_k) litellmParams.top_k = model.top_k;
         if (model.top_p) litellmParams.top_p = model.top_p;
+      } else if (provider === 'huggingface') {
+        // Set hard limits for HuggingFace models
+        const maxTokens = model.max_tokens || 8192;
+        litellmParams.max_tokens = maxTokens;
+        litellmParams.num_retries = 0; // Disable retries to avoid max_retries param
+        litellmParams.model_info = {
+          max_tokens: maxTokens,
+          max_input_tokens: 100000,
+          max_output_tokens: maxTokens,
+        };
       }
 
       modelList.push({

@@ -6,7 +6,7 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { randomBytes } from 'crypto';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
 import { generateConfig } from './generate-config.js';
 import { ensureLMStudio, ensureDocker } from './services.js';
 
@@ -28,9 +28,33 @@ async function loadConfig(rootDir) {
   }
 }
 
-// Cleanup function
-let composeProcess = null;
-async function cleanup(rootDir) {
+// Check if Docker containers are running
+async function areContainersRunning() {
+  try {
+    const { stdout } = await execAsync(
+      'docker ps --filter "name=hermit" --format "{{.Names}}"'
+    );
+    return stdout.includes('hermit');
+  } catch {
+    return false;
+  }
+}
+
+// Get or create auth token
+function getOrCreateToken(cacheDir) {
+  const tokenFile = join(cacheDir, '.hermit-token');
+
+  if (existsSync(tokenFile)) {
+    return readFileSync(tokenFile, 'utf8').trim();
+  }
+
+  const token = `sk-hermit-${randomBytes(16).toString('hex')}`;
+  writeFileSync(tokenFile, token);
+  return token;
+}
+
+// Stop services
+async function stopServices(rootDir) {
   console.log('\n🛑 Stopping Hermit services...');
 
   const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
@@ -41,30 +65,33 @@ async function cleanup(rootDir) {
     console.error('Error stopping services:', error.message);
   }
 
-  // Remove env file
+  // Remove cached files
   const cacheDir = join(rootDir, '.cache');
+  const tokenFile = join(cacheDir, '.hermit-token');
   const envFile = join(cacheDir, '.hermit-env');
+
+  if (existsSync(tokenFile)) {
+    unlinkSync(tokenFile);
+  }
   if (existsSync(envFile)) {
     unlinkSync(envFile);
-    console.log('✓ Removed environment file');
-    console.log('');
-    console.log('To clear environment variables, run: hermit_clear');
-    console.log('(Or restart your shell)');
   }
 
-  process.exit(0);
+  console.log('✓ Cleaned up cache files');
 }
 
 // Main function
 export async function run(options = {}) {
-  const silent = options.silent !== false; // Default to silent
+  const stopCmd = options.stop || false;
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const rootDir = dirname(__dirname);
 
-  // Handle cleanup signals
-  process.on('SIGINT', () => cleanup(rootDir));
-  process.on('SIGTERM', () => cleanup(rootDir));
+  // Handle stop command
+  if (stopCmd) {
+    await stopServices(rootDir);
+    process.exit(0);
+  }
 
   // Load hermit.config.js
   const config = await loadConfig(rootDir);
@@ -73,123 +100,99 @@ export async function run(options = {}) {
   const cacheDir = join(rootDir, '.cache');
   generateConfig(config.models, cacheDir);
 
-  // Ensure services are running
-  const hasLocalModels = config.models.some((m) => m.provider === 'local');
-  if (hasLocalModels) {
-    await ensureLMStudio();
+  // Check if services are already running
+  const isRunning = await areContainersRunning();
+  let authToken;
+
+  if (isRunning) {
+    console.log('✓ Hermit services already running');
+    authToken = getOrCreateToken(cacheDir);
+  } else {
+    // Ensure services are running
+    const hasLocalModels = config.models.some((m) => m.provider === 'local');
+    if (hasLocalModels) {
+      await ensureLMStudio();
+    }
+    await ensureDocker();
+
+    // Get or create auth token
+    authToken = getOrCreateToken(cacheDir);
+
+    // Start docker compose
+    console.log('🚀 Starting Hermit services...');
+    const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
+
+    try {
+      await execAsync(
+        `LITELLM_MASTER_KEY="${authToken}" docker compose -f "${dockerCompose}" up -d`
+      );
+      console.log('✓ Services started');
+    } catch (error) {
+      console.error('Error starting services:', error.message);
+      process.exit(1);
+    }
   }
-  await ensureDocker();
 
-  // Generate auth token
-  const authToken = `sk-hermit-${randomBytes(16).toString('hex')}`;
-
-  // Start docker compose
-  console.log('🚀 Starting Hermit services...');
-  const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
-
-  try {
-    await execAsync(
-      `LITELLM_MASTER_KEY="${authToken}" docker compose -f "${dockerCompose}" up -d`
-    );
-  } catch (error) {
-    console.error('Error starting services:', error.message);
-    process.exit(1);
-  }
-
-  // Set environment variables for current process
-  process.env.ANTHROPIC_AUTH_TOKEN = authToken;
-  process.env.ANTHROPIC_BASE_URL = 'http://localhost:4000';
-  process.env.ANTHROPIC_MODEL = 'local';
-  process.env.ANTHROPIC_SMALL_FAST_MODEL = 'local';
-  process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
-
-  // Write environment variables to file for sourcing
-  const envFile = join(cacheDir, '.hermit-env');
-  const envContent = `# Hermit environment variables
-# Usage:
-#   source ${envFile}     # Activate
-#   hermit_clear          # Clear variables
-
-export ANTHROPIC_AUTH_TOKEN="${authToken}"
-export ANTHROPIC_BASE_URL="http://localhost:4000"
-export ANTHROPIC_MODEL="local"
-export ANTHROPIC_SMALL_FAST_MODEL="local"
-export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-
-# Function to unset Hermit environment variables
-hermit_clear() {
-  unset ANTHROPIC_AUTH_TOKEN
-  unset ANTHROPIC_BASE_URL
-  unset ANTHROPIC_MODEL
-  unset ANTHROPIC_SMALL_FAST_MODEL
-  unset CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
-  unset -f hermit_clear
-  echo "✓ Hermit environment variables cleared"
-}
-`;
-  writeFileSync(envFile, envContent);
-
-  console.log('✓ Hermit is running and Claude Code is configured');
   console.log('');
   console.log('Available models:');
   config.models.forEach((model) => {
     console.log(`  - ${model.name} (${model.provider})`);
   });
   console.log('');
-  console.log('⚠️  Run this in your shell to enable Claude Code:');
-  console.log('');
-  console.log(`  source ${envFile}`);
-  console.log('');
-  console.log('Then run Claude Code:');
-  console.log(`  claude --model ${config.models[0]?.name || 'local'}`);
-  console.log('');
-  console.log('To clear variables later, run: hermit_clear');
+  console.log('🚀 Starting Claude Code...');
   console.log('');
 
-  // Keep script running
-  if (silent) {
-    console.log(
-      'Running in silent mode. Press Ctrl+C to stop services and clean up...'
-    );
-    // Wait indefinitely but wake up periodically to allow signal handling
-    await new Promise((resolve) => {
-      const interval = setInterval(() => {
-        // Just keep alive, signals will interrupt
-      }, 1000);
+  // Run Claude Code with environment variables
+  // Pass all arguments except 'stop' to Claude
+  let claudeArgs = process.argv.slice(2).filter((arg) => arg !== 'stop');
 
-      // Cleanup interval on process exit
-      process.once('beforeExit', () => clearInterval(interval));
-    });
-  } else {
-    console.log('Press Ctrl+C to stop services and clean up...');
-    // Follow logs
-    composeProcess = spawn(
-      'docker',
-      ['compose', '-f', dockerCompose, 'logs', '-f'],
-      {
-        stdio: 'inherit',
-      }
-    );
+  // Configure model aliases based on config
+  const defaultModel = config.models[0]?.name;
 
-    // Wait for logs process to exit
-    await new Promise((resolve) => {
-      composeProcess.on('exit', resolve);
-    });
+  // If no --model specified, use the first model from config
+  if (!claudeArgs.includes('--model') && !!defaultModel) {
+    claudeArgs = ['--model', defaultModel, ...claudeArgs];
   }
+  const env = {
+    ...process.env,
+    ANTHROPIC_AUTH_TOKEN: authToken,
+    ANTHROPIC_BASE_URL: 'http://localhost:4000',
+    ANTHROPIC_MODEL: defaultModel,
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: defaultModel,
+    ANTHROPIC_DEFAULT_SONNET_MODEL: defaultModel,
+    ANTHROPIC_DEFAULT_OPUS_MODEL: defaultModel,
+    CLAUDE_CODE_SUBAGENT_MODEL: defaultModel,
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+  };
+
+  const claude = spawn('claude', claudeArgs, {
+    stdio: 'inherit',
+    env,
+  });
+
+  // Wait for Claude to exit
+  await new Promise((resolve) => {
+    claude.on('exit', resolve);
+  });
+
+  console.log('');
+  console.log('✓ Claude Code exited');
+  console.log('');
+  console.log('Hermit services are still running.');
+  console.log('To stop them, run: hermit stop');
 }
 
 // If called directly, run the CLI
 const __filename = fileURLToPath(import.meta.url);
-const isMainModule = process.argv[1] && (
-  process.argv[1] === __filename ||
-  process.argv[1].endsWith('/hermit') ||
-  process.argv[1].endsWith('/src/hermit.js')
-);
+const isMainModule =
+  process.argv[1] &&
+  (process.argv[1] === __filename ||
+    process.argv[1].endsWith('/hermit') ||
+    process.argv[1].endsWith('/src/hermit.js'));
 
 if (isMainModule) {
-  // Default to silent, unless --logs flag is passed
-  const showLogs = process.argv.includes('--logs');
-  run({ silent: !showLogs }).catch((error) => {
+  const stop = process.argv.includes('stop');
+  run({ stop }).catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
   });

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/hermit.js",
-    "start:logs": "node src/hermit.js --logs",
+    "stop": "node src/hermit.js stop",
     "format": "prettier --write .",
     "link": "npm link",
     "unlink": "npm unlink -g hermit"
@@ -24,6 +24,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "author": "",
+  "author": "Nico Martin <mail@nico.dev>",
   "license": "MIT"
 }

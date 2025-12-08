@@ -17,12 +17,15 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - [LM Studio](https://lmstudio.ai/) (for local models)
 - [Node.js](https://nodejs.org/) (v16 or higher)
-- Claude Code CLI
+- [Claude Code CLI](https://code.claude.com/docs/en/setup)
 
 ## Setup
 
 1. **Clone or download this repository**
-
+   ```bash
+   git clone git@github.com:nico-martin/hermit.git
+   ```
+   
 2. **Install dependencies**:
    ```bash
    npm install
@@ -71,52 +74,44 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
 
 ## Usage
 
-### Start Hermit
+### Run Claude Code with Hermit
 
-**Terminal 1 - Start Hermit:**
+Simply run:
 ```bash
 hermit
-# or if not linked: npm start
 ```
 
 This will:
-- Generate `config.yaml` from `hermit.config.js`
-- Start Docker Desktop (if not running)
-- Start LM Studio (if not running)
-- Launch LiteLLM proxy on `localhost:4000`
-- Create `.hermit-env` file with environment variables
-- Run in silent mode (no logs)
+1. Check if services are already running (reuses them if so)
+2. If not running:
+   - Generate `config.yaml` from `hermit.config.js`
+   - Start Docker Desktop (if not running)
+   - Start LM Studio (if not running, and if you have local models)
+   - Launch LiteLLM proxy on `localhost:4000`
+3. Start Claude Code with environment configured
+4. When you exit Claude, services keep running in the background
 
-**Terminal 2 - Enable Claude Code:**
+**Pass arguments to Claude Code:**
 ```bash
-# Source the environment file (only needed once per shell session)
-source .cache/.hermit-env
-
-# Now use Claude Code with any configured model
-claude --model local
-claude --model kimi
-
-# When done, clear Hermit environment
-hermit_clear
+hermit --model kimi-or
+hermit --help
+hermit <any-claude-args>
 ```
 
-**Show logs:**
+**Multiple instances:**
+You can run `hermit` multiple times - it will reuse the same backend services and share the auth token.
+
+### Stop Services
+
+When you're done with all your Hermit sessions:
 ```bash
-hermit --logs
-# or
-npm run start:logs
+hermit stop
 ```
 
-### Stop Hermit
-
-Press `Ctrl+C` in the Hermit terminal to stop all services.
-
-To clear the environment variables in your shell, run:
-```bash
-hermit_clear
-```
-
-Or simply restart your shell.
+This will:
+- Stop Docker containers
+- Clean up cache files
+- Remove auth token
 
 ## How It Works
 
@@ -159,7 +154,7 @@ The script automatically generates the full `config.yaml` with all provider-spec
 Each provider has automatic configuration:
 
 - **`local`**: Routes to LM Studio on `localhost:1234`
-- **`huggingface`**: Uses Hugging Face Router with `HF_API_KEY`
+- **`huggingface`**: Uses Hugging Face Router with `HF_API_KEY` (⚠️ Currently under construction)
 - **`openrouter`**: Uses OpenRouter with `OPENROUTER_API_KEY`
 - **`anthropic`**: Uses real Anthropic API with `ANTHROPIC_API_KEY`
 
@@ -192,5 +187,7 @@ hermit/
 ```
 
 ## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
 
 This project is a wrapper around [LiteLLM](https://github.com/BerriAI/litellm). See their repository for license information.
