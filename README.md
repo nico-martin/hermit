@@ -63,14 +63,14 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
        },
        {
          name: 'kimi',
-         provider: 'huggingface',
-         model: 'moonshotai/Kimi-K2-Instruct-0905',
+         provider: 'openrouter',
+         model: 'moonshotai/kimi-k2-0905',
        },
      ],
    });
    ```
 
-   Supported providers: `local`, `huggingface`, `openrouter`, `anthropic`
+   Supported providers: `local`, `huggingface` (⚠️ Currently under construction), `openrouter`, `anthropic`
 
 ## Usage
 
