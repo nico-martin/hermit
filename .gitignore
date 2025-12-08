@@ -1,0 +1,23 @@
+# Environment variables with secrets
+.env
+
+# User config
+hermit.config.js
+
+# Cache (generated config, etc.)
+.cache/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/

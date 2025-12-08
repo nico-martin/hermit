@@ -1,0 +1,29 @@
+{
+  "name": "hermit",
+  "version": "1.0.0",
+  "description": "Route Claude Code to local/alternative AI models",
+  "main": "src/hermit.js",
+  "type": "module",
+  "bin": {
+    "hermit": "./src/hermit.js"
+  },
+  "scripts": {
+    "start": "node src/hermit.js",
+    "start:silent": "node src/hermit.js --silent",
+    "format": "prettier --write .",
+    "link": "npm link",
+    "unlink": "npm unlink -g hermit"
+  },
+  "dependencies": {
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "author": "",
+  "license": "MIT"
+}

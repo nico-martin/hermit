@@ -1,0 +1,42 @@
+services:
+  hermit:
+    image: ghcr.io/berriai/litellm:main-stable
+    command: ["--config=/app/config.yaml"]
+    container_name: hermit
+    restart: unless-stopped
+    volumes:
+      - ./.cache/config.yaml:/app/config.yaml
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 http://localhost:4000/health/liveliness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:16
+    restart: always
+    container_name: hermit_db
+    environment:
+      POSTGRES_DB: hermit
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: dbpassword9090
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d hermit -U llmproxy"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+    name: hermit_postgres_data
