@@ -33,7 +33,7 @@ let composeProcess = null;
 async function cleanup(rootDir) {
   console.log('\n🛑 Stopping Hermit services...');
 
-  const dockerCompose = join(rootDir, 'docker-compose.yml');
+  const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
   try {
     await execAsync(`docker compose -f "${dockerCompose}" down`);
     console.log('✓ Stopped Hermit');
@@ -82,7 +82,7 @@ export async function run(options = {}) {
 
   // Start docker compose
   console.log('🚀 Starting Hermit services...');
-  const dockerCompose = join(rootDir, 'docker-compose.yml');
+  const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
 
   try {
     await execAsync(

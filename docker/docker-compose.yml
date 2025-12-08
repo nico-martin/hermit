@@ -5,11 +5,11 @@ services:
     container_name: hermit
     restart: unless-stopped
     volumes:
-      - ./.cache/config.yaml:/app/config.yaml
+      - ../.cache/config.yaml:/app/config.yaml
     ports:
       - "4000:4000"
     env_file:
-      - .env
+      - ../.env
     depends_on:
       - db
     healthcheck:

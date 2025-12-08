@@ -181,8 +181,9 @@ hermit/
 │   ├── providers.js     # Provider templates
 │   ├── generate-config.js # Config generator
 │   └── services.js      # LM Studio & Docker helpers
+├── docker/
+│   └── docker-compose.yml # Docker services (LiteLLM + Postgres)
 ├── package.json         # Node.js dependencies
-├── docker-compose.yml   # Docker services (LiteLLM + Postgres)
 ├── .env                 # API keys and secrets
 ├── .cache/              # Generated files (config.yaml, etc.)
 └── README.md            # This file
