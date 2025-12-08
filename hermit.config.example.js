@@ -11,15 +11,15 @@ export default defineConfig({
       temperature: 0.7,
       top_p: 0.8,
     },
+    //{
+    //  name: 'kimi',
+    //  provider: 'huggingface',
+    //  model: 'moonshotai/Kimi-K2-Instruct-0905',
+    //},
     {
       name: 'kimi',
-      provider: 'huggingface',
-      model: 'moonshotai/Kimi-K2-Instruct-0905',
-    },
-    {
-      name: 'my-openrouter-model',
       provider: 'openrouter',
-      model: 'provider/model-id',
+      model: 'moonshotai/kimi-k2-0905',
     },
     // Enable real Anthropic API
     // {
