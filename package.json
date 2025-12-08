@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/hermit.js",
-    "start:silent": "node src/hermit.js --silent",
+    "start:logs": "node src/hermit.js --logs",
     "format": "prettier --write .",
     "link": "npm link",
     "unlink": "npm unlink -g hermit"

@@ -85,7 +85,7 @@ This will:
 - Start LM Studio (if not running)
 - Launch LiteLLM proxy on `localhost:4000`
 - Create `.hermit-env` file with environment variables
-- Show live logs
+- Run in silent mode (no logs)
 
 **Terminal 2 - Enable Claude Code:**
 ```bash
@@ -100,9 +100,11 @@ claude --model kimi
 hermit_clear
 ```
 
-**Silent mode** (no logs):
+**Show logs:**
 ```bash
-hermit --silent
+hermit --logs
+# or
+npm run start:logs
 ```
 
 ### Stop Hermit

@@ -57,7 +57,7 @@ async function cleanup(rootDir) {
 
 // Main function
 export async function run(options = {}) {
-  const silent = options.silent || false;
+  const silent = options.silent !== false; // Default to silent
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const rootDir = dirname(__dirname);
@@ -74,7 +74,10 @@ export async function run(options = {}) {
   generateConfig(config.models, cacheDir);
 
   // Ensure services are running
-  await ensureLMStudio();
+  const hasLocalModels = config.models.some((m) => m.provider === 'local');
+  if (hasLocalModels) {
+    await ensureLMStudio();
+  }
   await ensureDocker();
 
   // Generate auth token
@@ -184,8 +187,9 @@ const isMainModule = process.argv[1] && (
 );
 
 if (isMainModule) {
-  const silent = process.argv.includes('--silent');
-  run({ silent }).catch((error) => {
+  // Default to silent, unless --logs flag is passed
+  const showLogs = process.argv.includes('--logs');
+  run({ silent: !showLogs }).catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
   });
