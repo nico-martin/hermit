@@ -11,11 +11,11 @@ export default defineConfig({
       temperature: 0.7,
       top_p: 0.8,
     },
-    //{
-    //  name: 'kimi',
-    //  provider: 'huggingface',
-    //  model: 'moonshotai/Kimi-K2-Instruct-0905',
-    //},
+    {
+      name: 'gpt-oss',
+      provider: 'openrouter',
+      model: 'openai/gpt-oss-120b',
+    },
     {
       name: 'kimi',
       provider: 'openrouter',

@@ -1,7 +1,7 @@
 services:
   hermit:
     image: ghcr.io/berriai/litellm:main-stable
-    command: ["--config=/app/config.yaml"]
+    command: ["--config=/app/config.yaml", "--drop_params"]
     container_name: hermit
     restart: unless-stopped
     volumes:
@@ -10,6 +10,9 @@ services:
       - "4000:4000"
     env_file:
       - ../.env
+    environment:
+      - LITELLM_LOG=DEBUG
+      - LITELLM_NUM_RETRIES=0
     depends_on:
       - db
     healthcheck:

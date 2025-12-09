@@ -6,7 +6,13 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { randomBytes } from 'crypto';
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
+import {
+  writeFileSync,
+  unlinkSync,
+  existsSync,
+  readFileSync,
+  mkdirSync,
+} from 'fs';
 import { generateConfig } from './generate-config.js';
 import { ensureLMStudio, ensureDocker } from './services.js';
 
@@ -51,6 +57,55 @@ function getOrCreateToken(cacheDir) {
   const token = `sk-hermit-${randomBytes(16).toString('hex')}`;
   writeFileSync(tokenFile, token);
   return token;
+}
+
+// Generate unique instance ID
+function generateInstanceId() {
+  return randomBytes(8).toString('hex');
+}
+
+// Register instance
+function registerInstance(cacheDir, instanceId) {
+  if (!existsSync(cacheDir)) {
+    mkdirSync(cacheDir, { recursive: true });
+  }
+
+  const instancesFile = join(cacheDir, '.instances');
+  let instances = [];
+
+  if (existsSync(instancesFile)) {
+    const content = readFileSync(instancesFile, 'utf8').trim();
+    if (content) {
+      instances = content.split('\n');
+    }
+  }
+
+  instances.push(instanceId);
+  writeFileSync(instancesFile, instances.join('\n'));
+}
+
+// Unregister instance and check if any remain
+function unregisterInstance(cacheDir, instanceId) {
+  const instancesFile = join(cacheDir, '.instances');
+
+  if (!existsSync(instancesFile)) {
+    return true; // No instances file means no other instances
+  }
+
+  const content = readFileSync(instancesFile, 'utf8').trim();
+  if (!content) {
+    return true; // Empty file means no other instances
+  }
+
+  let instances = content.split('\n').filter((id) => id !== instanceId);
+
+  if (instances.length === 0) {
+    unlinkSync(instancesFile);
+    return true; // No other instances
+  }
+
+  writeFileSync(instancesFile, instances.join('\n'));
+  return false; // Other instances still exist
 }
 
 // Stop services
@@ -99,6 +154,10 @@ export async function run(options = {}) {
   // Generate config
   const cacheDir = join(rootDir, '.cache');
   generateConfig(config.models, cacheDir);
+
+  // Generate and register instance ID
+  const instanceId = generateInstanceId();
+  registerInstance(cacheDir, instanceId);
 
   // Check if services are already running
   const isRunning = await areContainersRunning();
@@ -170,6 +229,32 @@ export async function run(options = {}) {
     env,
   });
 
+  // Setup cleanup handler for signals
+  const cleanup = async () => {
+    const shouldStop = unregisterInstance(cacheDir, instanceId);
+    if (shouldStop) {
+      const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
+      try {
+        await execAsync(`docker compose -f "${dockerCompose}" down`);
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+    }
+  };
+
+  // Handle process termination signals
+  process.on('SIGINT', async () => {
+    claude.kill('SIGINT');
+    await cleanup();
+    process.exit(0);
+  });
+
+  process.on('SIGTERM', async () => {
+    claude.kill('SIGTERM');
+    await cleanup();
+    process.exit(0);
+  });
+
   // Wait for Claude to exit
   await new Promise((resolve) => {
     claude.on('exit', resolve);
@@ -178,8 +263,23 @@ export async function run(options = {}) {
   console.log('');
   console.log('✓ Claude Code exited');
   console.log('');
-  console.log('Hermit services are still running.');
-  console.log('To stop them, run: hermit stop');
+
+  // Unregister instance and check if we should stop services
+  const shouldStop = unregisterInstance(cacheDir, instanceId);
+
+  if (shouldStop) {
+    console.log('🛑 Stopping Hermit services (no other instances running)...');
+    const dockerCompose = join(rootDir, 'docker', 'docker-compose.yml');
+    try {
+      await execAsync(`docker compose -f "${dockerCompose}" down`);
+      console.log('✓ Stopped Hermit services');
+    } catch (error) {
+      console.error('Error stopping services:', error.message);
+    }
+  } else {
+    console.log('Hermit services are still running (other instances active).');
+    console.log('To stop them, run: hermit stop');
+  }
 }
 
 // If called directly, run the CLI

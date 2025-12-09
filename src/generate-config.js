@@ -58,14 +58,21 @@ export function generateConfig(models, cacheDir) {
         if (model.top_k) litellmParams.top_k = model.top_k;
         if (model.top_p) litellmParams.top_p = model.top_p;
       } else if (provider === 'huggingface') {
-        // Set hard limits for HuggingFace models
+        // TODO: does not work yet
+        // For HuggingFace Router, use custom_llm_provider to bypass model validation
         const maxTokens = model.max_tokens || 8192;
+        // Use openai_compatible prefix instead to bypass OpenAI model validation
+        litellmParams.model = `openai_compatible/${modelId}`;
         litellmParams.max_tokens = maxTokens;
-        litellmParams.num_retries = 0; // Disable retries to avoid max_retries param
+        litellmParams.stream_timeout = 600;
+        litellmParams.supports_vision = false;
+        litellmParams.supports_function_calling = true;
         litellmParams.model_info = {
           max_tokens: maxTokens,
           max_input_tokens: 100000,
           max_output_tokens: maxTokens,
+          supports_vision: false,
+          supports_function_calling: true,
         };
       }
 
@@ -75,7 +82,13 @@ export function generateConfig(models, cacheDir) {
       });
     }
 
-    const config = { model_list: modelList };
+    const config = {
+      model_list: modelList,
+      general_settings: {
+        num_retries: 0, // Disable retries globally for providers that don't support it
+        allowed_fails: 0,
+      },
+    };
     const configFile = join(cacheDir, 'config.yaml');
     writeFileSync(configFile, YAML.stringify(config));
 

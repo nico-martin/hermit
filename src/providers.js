@@ -7,8 +7,8 @@ export const PROVIDERS = {
   huggingface: {
     api_base: 'https://router.huggingface.co/v1',
     api_key: 'os.environ/HF_API_KEY',
-    model_prefix: 'huggingface/',
-    drop_params: true,
+    model_prefix: 'openai/',
+    drop_params: true, // Drop all unsupported params
   },
   openrouter: {
     api_base: 'https://openrouter.ai/api/v1',
