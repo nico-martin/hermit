@@ -70,7 +70,7 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
    });
    ```
 
-   Supported providers: `lmstudio` (local), `huggingface` (⚠️ Currently under construction), `openrouter`, `anthropic`
+   Supported providers: `lmstudio` (local), `huggingface`, `openrouter`, `anthropic`
 
 ## Usage
 
@@ -154,7 +154,7 @@ The script automatically generates the full `config.yaml` with all provider-spec
 Each provider has automatic configuration:
 
 - **`lmstudio`**: Routes to LM Studio (local) on `localhost:1234`
-- **`huggingface`**: Uses Hugging Face Router with `HF_API_KEY` (⚠️ Currently under construction)
+- **`huggingface`**: Uses Hugging Face Router with `HF_TOKEN`
 - **`openrouter`**: Uses OpenRouter with `OPENROUTER_API_KEY`
 - **`anthropic`**: Uses real Anthropic API with `ANTHROPIC_API_KEY`
 
