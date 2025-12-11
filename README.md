@@ -42,35 +42,40 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
    # Edit .env and add your API keys
    ```
 
-5. **Create your config** in `hermit.config.js`:
-   ```bash
-   cp hermit.config.example.js hermit.config.js
-   # Edit hermit.config.js to configure your models
-   ```
+   5. **Create your config** in `hermit.config.js`:
+      ```bash
+      cp hermit.config.example.js hermit.config.js
+      # Edit hermit.config.js to configure your models
+      ```
 
-   Example config:
-   ```javascript
-   import { defineConfig } from './src/hermit.js';
+      Example config:
+      ```javascript
+      import { defineConfig } from './src/hermit.js';
 
-   export default defineConfig({
-     models: [
-       {
-         name: 'qwen3-coder',
-         provider: 'lmstudio',
-         model: 'qwen3-coder-30b',
-         max_tokens: 65536,
-         temperature: 0.7,
-       },
-       {
-         name: 'kimi',
-         provider: 'openrouter',
-         model: 'moonshotai/kimi-k2-0905',
-       },
-     ],
-   });
-   ```
+      export default defineConfig({
+        models: [
+          {
+            name: 'qwen3-coder',
+            provider: 'lmstudio',
+            model: 'qwen3-coder-30b',
+            max_tokens: 65536,
+            temperature: 0.7,
+          },
+          {
+            name: 'gpt',
+            provider: 'huggingface',
+            model: 'openai/gpt-oss-120b',
+          },
+          {
+            name: 'kimi',
+            provider: 'openrouter',
+            model: 'moonshotai/kimi-k2-0905',
+          },
+        ],
+      });
+      ```
 
-   Supported providers: `lmstudio` (local), `huggingface`, `openrouter`, `anthropic`
+      Supported providers: `lmstudio` (local), `huggingface`, `openrouter`, `anthropic`
 
 ## Usage
 
@@ -112,6 +117,8 @@ This will:
 - Stop Docker containers
 - Clean up cache files
 - Remove auth token
+
+> This will run automatically when all hermit/claude instances are exited `/exit`
 
 ## How It Works
 
