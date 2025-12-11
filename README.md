@@ -154,7 +154,7 @@ The script automatically generates the full `config.yaml` with all provider-spec
 
 1. Load a different model in LM Studio
 2. Update the `model` field in `hermit.config.js` under the `local` entry
-3. Restart: `Ctrl+C` then `hermit`
+3. Restart: `/exit` then `hermit`
 
 ### Provider Configuration
 
