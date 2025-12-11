@@ -55,8 +55,8 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
    export default defineConfig({
      models: [
        {
-         name: 'local',
-         provider: 'local',
+         name: 'qwen3-coder',
+         provider: 'lmstudio',
          model: 'qwen3-coder-30b',
          max_tokens: 65536,
          temperature: 0.7,
@@ -70,7 +70,7 @@ Hermit uses LiteLLM to intercept API calls from Claude Code and route them to:
    });
    ```
 
-   Supported providers: `local`, `huggingface` (⚠️ Currently under construction), `openrouter`, `anthropic`
+   Supported providers: `lmstudio` (local), `huggingface` (⚠️ Currently under construction), `openrouter`, `anthropic`
 
 ## Usage
 
@@ -153,7 +153,7 @@ The script automatically generates the full `config.yaml` with all provider-spec
 
 Each provider has automatic configuration:
 
-- **`local`**: Routes to LM Studio on `localhost:1234`
+- **`lmstudio`**: Routes to LM Studio (local) on `localhost:1234`
 - **`huggingface`**: Uses Hugging Face Router with `HF_API_KEY` (⚠️ Currently under construction)
 - **`openrouter`**: Uses OpenRouter with `OPENROUTER_API_KEY`
 - **`anthropic`**: Uses real Anthropic API with `ANTHROPIC_API_KEY`

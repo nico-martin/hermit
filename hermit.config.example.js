@@ -21,6 +21,11 @@ export default defineConfig({
       provider: 'openrouter',
       model: 'moonshotai/kimi-k2-0905',
     },
+    {
+      name: 'gpt',
+      provider: 'huggingface',
+      model: 'openai/gpt-oss-120b',
+    },
     // Enable real Anthropic API
     // {
     //   name: 'claude',

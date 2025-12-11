@@ -1,5 +1,5 @@
 export const PROVIDERS = {
-  local: {
+  lmstudio: {
     api_base: 'http://host.docker.internal:1234/v1',
     api_key: 'lm-studio',
     model_prefix: 'openai/',
@@ -7,8 +7,8 @@ export const PROVIDERS = {
   huggingface: {
     api_base: 'https://router.huggingface.co/v1',
     api_key: 'os.environ/HF_API_KEY',
-    model_prefix: 'openai/',
-    drop_params: true, // Drop all unsupported params
+    model_prefix: 'huggingface/',
+    drop_params: true,
   },
   openrouter: {
     api_base: 'https://openrouter.ai/api/v1',

@@ -168,7 +168,7 @@ export async function run(options = {}) {
     authToken = getOrCreateToken(cacheDir);
   } else {
     // Ensure services are running
-    const hasLocalModels = config.models.some((m) => m.provider === 'local');
+    const hasLocalModels = config.models.some((m) => m.provider === 'lmstudio');
     if (hasLocalModels) {
       await ensureLMStudio();
     }

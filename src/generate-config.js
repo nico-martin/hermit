@@ -49,7 +49,7 @@ export function generateConfig(models, cacheDir) {
       }
 
       // Add provider-specific parameters
-      if (provider === 'local') {
+      if (provider === 'lmstudio') {
         // Optional parameters for local provider
         if (model.max_tokens) litellmParams.max_tokens = model.max_tokens;
         if (model.repetition_penalty)
@@ -58,22 +58,6 @@ export function generateConfig(models, cacheDir) {
         if (model.top_k) litellmParams.top_k = model.top_k;
         if (model.top_p) litellmParams.top_p = model.top_p;
       } else if (provider === 'huggingface') {
-        // TODO: does not work yet
-        // For HuggingFace Router, use custom_llm_provider to bypass model validation
-        const maxTokens = model.max_tokens || 8192;
-        // Use openai_compatible prefix instead to bypass OpenAI model validation
-        litellmParams.model = `openai_compatible/${modelId}`;
-        litellmParams.max_tokens = maxTokens;
-        litellmParams.stream_timeout = 600;
-        litellmParams.supports_vision = false;
-        litellmParams.supports_function_calling = true;
-        litellmParams.model_info = {
-          max_tokens: maxTokens,
-          max_input_tokens: 100000,
-          max_output_tokens: maxTokens,
-          supports_vision: false,
-          supports_function_calling: true,
-        };
       }
 
       modelList.push({
